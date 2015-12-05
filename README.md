@@ -1,9 +1,9 @@
 # Designing a Game of Dices (Kata)
 
-  * Author: [Sébastien Mosser](mosser@i3s.unice.fr)
+  * Author: [Sébastien Mosser](mosser@i3s.unice.fr) (inspired by [Simon Urli](urli@i3s.unice.fr))
   * Version: 1.0 (11.2015)
 
-The intent of this kata is to put all the elementary bricks shown in the _Software Engineering_ together. We'll use Maven and JUnit as a support to build a simple game of dices in Java, using a vertical (feature-driven) approach. We'll also introduce _mock_ objects (using the Mockito framework) to support testing when classical unit tests do not fit.
+The intent of this kata is to put all the elementary bricks described in the _Software Engineering_ course together. We'll use Maven and JUnit as a support to build a simple game of dices in Java, using a vertical (feature-driven) approach. We will ll also introduce _mock_ objects (using the Mockito framework) to support testing when classical unit tests do not fit well.
 
 ## Functional Specifications [Tasks]
 
@@ -14,9 +14,9 @@ The product backlog is defined as the following (order matters, representing the
   2. Associate a dice roll result to a given player:
     * _Acceptance criteria_: A player has a name, and exposes the value obtained from her very own dice
   3. The player throws two dices and keeps the max
-    * _Acceptance criteria_: the dice is only thrown twice, and the max value is kept.  
-  4. A _Game of Dice_ is a two player game, and the max value win (ex-aequo implies to restart the game, no winner after 5 ex-aequo matches)
-    * _Acceptance criteria_: the game exposes a winner, following the game rules
+    * _Acceptance criteria_: the dice is only thrown twice, and only the max value is kept.  
+  4. A _Game of Dice_ is a two players game, and the player who obtains the max value on a dice roll win (ex-aequo implies to restart the game, no winner after 5 ex-aequo matches)
+    * _Acceptance criteria_: the game exposes a winner, according to the game rules
 
 ## Project Architecture [Maven]
 
@@ -53,7 +53,7 @@ You can now import this empty project in your favorite IDE, as a Maven project, 
 
 ## Task #1: Trowing a dice
 
-In a package `god` we create a class `Dice` used to model this concept. The responsibility of this class is to support dice throwing, through a `roll` method. In a minimal approach, we only consider dices with 6 faces. Using a `RuntimeException` is part of our debt, but there is no added value for now to introduce an exception hierarchy in our code. We construct a Dice using a given `Random` object to support game reproducibility.
+In a package `god` we create a class `Dice` used to model this concept. The responsibility of this class is to support dice throwing, through a `roll` method. In a minimal approach, we only consider dices with 6 faces. Using a `RuntimeException` is part of our technical debt, but there is no added value for now to introduce an exception hierarchy in the code. We construct a Dice using a given `Random` object to support game reproducibility.
 
 ```java
 package god;
@@ -78,11 +78,13 @@ public class Dice {
 
 ### Tests [JUnit]
 
-We use unit tests to model our acceptance criteria and automate the verification of our dice. Operationalizing the _definition of done_ is one of the good side effect of testing your code.
+We use unit tests to model our acceptance criteria and automate the assessment of our task. Operationalizing the _definition of done_ is one of the good side effects (among others) of testing your code.
 
-We need to test that: _(i)_ throwing a dice returns a value, and that _(ii)_ a value not in [1,6] will throw an exception. The first test is easy: we'll throw the dice a _good enough_ number of time, and assess that the returned values are in range. But how to implement the second one, as it is not possible with this implementation ?
+We need to test that: _(i)_ throwing a dice returns a value, and that _(ii)_ a value not in [1,6] will throw an exception. The first test is easy: we'll throw the dice a _good enough_ number of times, and assess that the returned values are in range. It does not mean that the definition of our Dice is always correct, but that it is correct based on a _good enough_ number of experiments.
 
-The _naive_ answer is to extend the `Random` concept into a `NoRandom` one. This extension will be configurable considering that one can configure which value will be returned when the `nextInt(int): int` method is called. We'll use it in our test suite to check that the exception is thrown when necessary. 
+But how to implement the second one, as it is not possible with this implementation ?
+
+The _naive_ answer is to extend the `Random` concept into a `NoRandom` one. This extension will be configurable considering that one can configure which value will be returned when the `nextInt(int): int` method is called. We use this new class it in our test suite to check that the exception is thrown when necessary. 
 
 ```java
 package god;
@@ -129,11 +131,11 @@ public class DiceTest {
 
 ## Introducing mock objects
 
-It does not make any sense to manually override classes for test purpose. Actually, what we only need is to consider a `Dice` but we need to change its behavior into something that fit our test context. The concept of _Mock Object_ is exactly defined to support this intention.
+__It does not make any sense to manually override classes for test purpose__. Actually, what we only need is to consider a `Random` where on can change its behavior into something that fit the test context. The concept of _Mock Object_ is exactly defined to support this intention.
 
-### Introducing the Mock Framework [Maven]
+### Introducing the Mockito Framework [Maven]
 
-Thanks to the Maven dependency engine, we automatically introduce _Mockito_ (a state of the art mock framework for the Java ecosystem) by declaring the dependency in the POM file:
+Thanks to the Maven dependency engine, we automatically introduce _Mockito_ (a state of the art mock framework for the Java ecosystem, amonfg others) by declaring the dependency in the POM file:
 
 ```xml
 <dependency>
@@ -146,7 +148,7 @@ Thanks to the Maven dependency engine, we automatically introduce _Mockito_ (a s
 
 ### Creating a mock
 
-The role of a _mock_ is to overload the behavior of an object, in a controllable way. As a consequence, instead of manually creating a class extending `Random`, we create a _mocked_ random, and overload its behavior when the `nextInt(int): int` method is called, according to our needs.
+The role of a _mock_ is to overload the behavior of an object, in a controllable way. As a consequence, instead of manually creating a class extending `Random`, we create a _mocked_ random instance, and overload its behavior when the `nextInt(int): int` method is called, according to our needs.
 
 ```java
 // ...
@@ -176,7 +178,7 @@ public class DiceTest {
 
 ## Task #2: Associating a dice roll to a player
 
-A minimal implementation of the `Player` concept is the following: the constructor takes the player's name and her dice, and will store in a `lastValue` field the last value obtained from the dice. We'll return `-1` if the dice has not been thrown for now. A `play` method throws the dice and stores the value.
+A minimal implementation of the `Player` concept is the following: the constructor takes the player's name and her dice, and stores in a `lastValue` field the last value obtained from the dice. We'll return `-1` if the dice has not been thrown yet. A `play` method throws the dice and stores the value.
 
 ```java
 package god;
@@ -236,7 +238,7 @@ public class PlayerTest {
 
 ### Using Java 8 Optionals [Maven]
 
-Returning `-1` when the dice has not been thrown is ugly _by design_, and thus part of our technical debt. Java 8 defines the notion of `Optional` that fits this very purpose: a value can be defined, or not. To support this feature, we must ensure that our compiler is set to the `1.8` version of both source code and target bytecode files. This can be easily defined in the POM:
+Returning `-1` when the dice has not been thrown is _ugly by design_, and thus part of our technical debt. Java 8 defines the notion of `Optional` that fits this very purpose: a value can be defined, or not. To support this feature, we must ensure that our compiler is set to the `1.8` version of both source code and target bytecode files. This can be easily defined in the POM:
 
 ```xml
 <properties>
@@ -302,7 +304,9 @@ We have to enhance the `play` method to throw the dice twice and keep only the m
 
 ### Test: Player follows the rules [Mockito]
 
-How it is possible to test that our implementation of players follows the rule and does not throw the dice 42 times instead of 2? As usual, mock objects will help us to assess that, by allowing one to measure the execution flow that goes through a given mock. Using a mocked `Dice`, we simply asks Mockito to check that the `roll` method was called only two times after the `play` method was called.
+How it is possible to test that our implementation of players follows the rule and does not throw the dice 42 times instead of only 2? 
+
+As usual, mock objects will help us to assess that, by allowing us to measure the execution flow that goes through a given mock. Using a mocked `Dice`, we simply asks Mockito to `verify` that the `roll` method was called on `d` only two times after the `play` method was called.
 
 ```java
 	@Test
